@@ -2,6 +2,12 @@ import { NextRequest, NextResponse } from 'next/server';
 
 const API_URL = process.env.API_URL || 'http://localhost:3002';
 
+function getClientIp(request: NextRequest): string {
+  return request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() 
+    || request.headers.get('x-real-ip') 
+    || '';
+}
+
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ address: string }> }
@@ -10,12 +16,15 @@ export async function GET(
     const { address } = await params;
     const { searchParams } = new URL(request.url);
     const exits = searchParams.get('exits');
+    const clientIp = getClientIp(request);
     
     const url = exits !== null 
       ? `${API_URL}/bridge/${address}?exits=${exits}`
       : `${API_URL}/bridge/${address}`;
     
-    const res = await fetch(url);
+    const res = await fetch(url, {
+      headers: { 'x-forwarded-for': clientIp },
+    });
     const data = await res.json();
     return NextResponse.json(data, { status: res.status });
   } catch (error) {
