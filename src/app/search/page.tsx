@@ -25,12 +25,17 @@ export default function SearchPage() {
 
   const isValidAddress = /^0x[0-9a-fA-F]{40}$/.test(address);
 
-  // Fetch limits on mount
-  useEffect(() => {
-    fetch('/api/limits')
+  // Fetch limits
+  const fetchLimits = () => {
+    fetch('/api/limits', { cache: 'no-store' })
       .then(res => res.json())
       .then(data => setLimits(data.limits))
       .catch(() => {});
+  };
+
+  // Fetch on mount
+  useEffect(() => {
+    fetchLimits();
   }, []);
 
   const getRemaining = (type: ScanType): number => {
@@ -61,6 +66,7 @@ export default function SearchPage() {
           const err = await res.json();
           throw new Error(err.message || 'Failed to trace bridges');
         }
+        fetchLimits(); // Refresh limits after scan
         router.push(`/bridge/${address.toLowerCase()}`);
       } else {
         const res = await fetch(`/api/scan`, {
@@ -75,6 +81,7 @@ export default function SearchPage() {
         }
 
         const data = await res.json();
+        fetchLimits(); // Refresh limits after scan
         router.push(`/scan/${data.scanId}`);
       }
     } catch (err) {

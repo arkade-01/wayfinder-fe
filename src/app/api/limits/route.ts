@@ -11,6 +11,7 @@ export async function GET(request: NextRequest) {
       headers: {
         'x-forwarded-for': forwarded,
       },
+      cache: 'no-store',
     });
     
     const data = await res.json();
