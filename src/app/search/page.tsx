@@ -61,13 +61,21 @@ export default function SearchPage() {
 
     try {
       if (scanType === 'bridge') {
-        const res = await fetch(`/api/bridge/${address.toLowerCase()}`);
+        // Bridge is now async like full scan
+        const res = await fetch(`/api/scan`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ address, mode: 'bridge' }),
+        });
+
         if (!res.ok) {
           const err = await res.json();
-          throw new Error(err.message || 'Failed to trace bridges');
+          throw new Error(err.message || 'Failed to queue bridge trace');
         }
-        fetchLimits(); // Refresh limits after scan
-        router.push(`/bridge/${address.toLowerCase()}`);
+
+        const data = await res.json();
+        fetchLimits();
+        router.push(`/scan/${data.scanId}`);
       } else {
         const res = await fetch(`/api/scan`, {
           method: 'POST',
