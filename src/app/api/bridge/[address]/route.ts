@@ -3,9 +3,10 @@ import { NextRequest, NextResponse } from 'next/server';
 const API_URL = process.env.API_URL || 'http://localhost:3002';
 
 function getClientIp(request: NextRequest): string {
-  return request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() 
-    || request.headers.get('x-real-ip') 
-    || '';
+  // Vercel provides real client IP in x-real-ip or first entry of x-forwarded-for
+  return request.headers.get('x-real-ip')
+    || request.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
+    || 'unknown';
 }
 
 export async function GET(
