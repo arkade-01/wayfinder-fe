@@ -50,7 +50,9 @@ export default function BridgeResultPage() {
   useEffect(() => {
     const fetchBridge = async () => {
       try {
-        const res = await fetch(`/api/bridge/${address}`);
+        // Call API directly to avoid Vercel's 10s timeout
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://56.228.29.59:3002';
+        const res = await fetch(`${apiUrl}/bridge/${address}`);
         if (!res.ok) throw new Error('Failed to fetch bridge data');
         const result = await res.json();
         setData(result);
