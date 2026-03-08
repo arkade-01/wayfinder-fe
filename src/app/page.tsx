@@ -35,9 +35,6 @@ export default function LandingPage() {
           <span className="text-lg sm:text-xl font-bold tracking-tight">Wayfinder</span>
         </div>
         <div className="flex items-center gap-2 sm:gap-4">
-          <Link href="/bulk" className="text-sm text-white/60 hover:text-white transition-colors hidden sm:block">
-            Bulk Scan
-          </Link>
           <Button asChild size="sm" className="bg-[#d4a853] hover:bg-[#e8c878] text-[#0a1628] font-semibold text-sm sm:text-base">
             <Link href="/search">Launch App</Link>
           </Button>
