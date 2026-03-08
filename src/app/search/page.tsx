@@ -112,6 +112,9 @@ export default function SearchPage() {
           <CompassIcon className="w-6 h-6 sm:w-7 sm:h-7 text-[#d4a853]" />
           <span className="text-base sm:text-lg font-bold tracking-tight">Wayfinder</span>
         </Link>
+        <Link href="/bulk" className="text-sm text-white/50 hover:text-white transition-colors">
+          Bulk Scan →
+        </Link>
       </nav>
 
       <div className="relative z-10 flex items-center justify-center px-4 pt-4 sm:pt-8 pb-12 sm:pb-20">
