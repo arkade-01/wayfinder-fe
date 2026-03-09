@@ -14,6 +14,7 @@ interface Limits {
   quick: { used: number; limit: number; resetsAt: string };
   full: { used: number; limit: number; resetsAt: string };
   bridge: { used: number; limit: number; resetsAt: string };
+  bulk: { used: number; limit: number; resetsAt: string };
 }
 
 interface BulkJobStatus {
@@ -220,30 +221,6 @@ export default function SearchPage() {
             <p className="text-white/50 text-sm sm:text-base">Enter an address to begin investigation</p>
           </div>
 
-          {/* Mode Toggle */}
-          <div className="flex gap-2 p-1 bg-white/5 rounded-xl mb-5 sm:mb-6">
-            <button
-              onClick={() => { setScanMode('single'); setBulkJob(null); setError(''); }}
-              className={`flex-1 py-2 text-sm font-medium rounded-lg transition-all ${
-                scanMode === 'single' 
-                  ? 'bg-[#d4a853] text-[#0a1628]' 
-                  : 'text-white/50 hover:text-white'
-              }`}
-            >
-              Single
-            </button>
-            <button
-              onClick={() => { setScanMode('bulk'); setError(''); }}
-              className={`flex-1 py-2 text-sm font-medium rounded-lg transition-all ${
-                scanMode === 'bulk' 
-                  ? 'bg-[#d4a853] text-[#0a1628]' 
-                  : 'text-white/50 hover:text-white'
-              }`}
-            >
-              Bulk
-            </button>
-          </div>
-
           {/* Rate Limits */}
           {limits && (
             <div className="flex justify-center gap-2 sm:gap-4 mb-5 sm:mb-6">
@@ -253,26 +230,108 @@ export default function SearchPage() {
             </div>
           )}
 
-          {/* Single Scan Form */}
-          {scanMode === 'single' && (
-            <form onSubmit={handleSingleSubmit} className="space-y-4 sm:space-y-6">
+          {/* Input Section with Mode Tabs */}
+          {!bulkJob && (
+            <form onSubmit={scanMode === 'single' ? handleSingleSubmit : handleBulkSubmit} className="space-y-4 sm:space-y-6">
               <div>
-                <label className="block text-xs sm:text-sm font-medium text-white/70 mb-1.5 sm:mb-2">
-                  Wallet Address
-                </label>
-                <input
-                  type="text"
-                  value={address}
-                  onChange={(e) => setAddress(e.target.value)}
-                  placeholder="0x..."
-                  className="w-full px-3 sm:px-4 py-3 sm:py-3.5 bg-white/5 border border-white/10 rounded-xl focus:outline-none focus:border-[#d4a853]/50 focus:ring-1 focus:ring-[#d4a853]/50 text-white placeholder-white/30 font-mono text-xs sm:text-sm transition-colors"
-                />
-                {address && !isValidAddress && (
-                  <p className="text-red-400 text-sm mt-2">⚠️ Invalid address format</p>
+                {/* Tabs on Input */}
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex gap-1">
+                    <button
+                      type="button"
+                      onClick={() => { setScanMode('single'); setError(''); }}
+                      className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${
+                        scanMode === 'single' ? 'bg-white/10 text-white' : 'text-white/40 hover:text-white/60'
+                      }`}
+                    >
+                      Single
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => { setScanMode('bulk'); setError(''); }}
+                      className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${
+                        scanMode === 'bulk' ? 'bg-white/10 text-white' : 'text-white/40 hover:text-white/60'
+                      }`}
+                    >
+                      Bulk
+                    </button>
+                  </div>
+                  {scanMode === 'bulk' && (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => fileInputRef.current?.click()}
+                        className="text-xs text-[#d4a853] hover:text-[#e8c878] transition-colors"
+                      >
+                        Upload CSV
+                      </button>
+                      <input ref={fileInputRef} type="file" accept=".csv,.txt" onChange={handleFileUpload} className="hidden" />
+                    </>
+                  )}
+                </div>
+
+                {/* Single Input */}
+                {scanMode === 'single' && (
+                  <>
+                    <input
+                      type="text"
+                      value={address}
+                      onChange={(e) => setAddress(e.target.value)}
+                      placeholder="0x..."
+                      className="w-full px-3 sm:px-4 py-3 sm:py-3.5 bg-white/5 border border-white/10 rounded-xl focus:outline-none focus:border-[#d4a853]/50 focus:ring-1 focus:ring-[#d4a853]/50 text-white placeholder-white/30 font-mono text-xs sm:text-sm transition-colors"
+                    />
+                    {address && !isValidAddress && (
+                      <p className="text-red-400 text-sm mt-2">⚠️ Invalid address format</p>
+                    )}
+                  </>
+                )}
+
+                {/* Bulk Input */}
+                {scanMode === 'bulk' && (
+                  <>
+                    <textarea
+                      value={bulkAddresses}
+                      onChange={(e) => setBulkAddresses(e.target.value)}
+                      placeholder="Paste addresses, one per line...&#10;0x889D...&#10;0xd8dA..."
+                      rows={5}
+                      className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl focus:outline-none focus:border-[#d4a853]/50 text-white placeholder-white/30 font-mono text-xs sm:text-sm resize-none transition-colors"
+                    />
+                    <div className="flex items-center justify-between mt-2 text-xs text-white/40">
+                      <span>{validCount} valid address{validCount !== 1 ? 'es' : ''}</span>
+                      <span>Max 50</span>
+                    </div>
+                  </>
                 )}
               </div>
 
-              <ScanTypeSelector scanType={scanType} setScanType={setScanType} getRemaining={getRemaining} limits={limits} />
+              {/* Scan Type - only for single mode, bulk uses quick/full toggle */}
+              {scanMode === 'single' ? (
+                <ScanTypeSelector scanType={scanType} setScanType={setScanType} getRemaining={getRemaining} limits={limits} />
+              ) : (
+                <div>
+                  <label className="block text-xs sm:text-sm font-medium text-white/70 mb-2">Scan Mode</label>
+                  <div className="flex gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setScanType('quick')}
+                      className={`flex-1 py-3 px-4 rounded-xl border text-sm font-medium transition-all ${
+                        scanType === 'quick' ? 'border-[#d4a853]/50 bg-[#d4a853]/10 text-[#d4a853]' : 'border-white/10 text-white/50 hover:border-white/20'
+                      }`}
+                    >
+                      Quick
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setScanType('full')}
+                      className={`flex-1 py-3 px-4 rounded-xl border text-sm font-medium transition-all ${
+                        scanType === 'full' ? 'border-cyan-500/50 bg-cyan-500/10 text-cyan-400' : 'border-white/10 text-white/50 hover:border-white/20'
+                      }`}
+                    >
+                      Deep
+                    </button>
+                  </div>
+                </div>
+              )}
 
               {error && (
                 <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-sm text-center">
@@ -282,86 +341,20 @@ export default function SearchPage() {
 
               <Button
                 type="submit"
-                disabled={!isValidAddress || loading || isLimitReached(scanType)}
+                disabled={scanMode === 'single' ? (!isValidAddress || loading || isLimitReached(scanType)) : (validCount === 0 || loading)}
                 className="w-full py-5 sm:py-6 bg-[#d4a853] hover:bg-[#e8c878] disabled:bg-white/10 disabled:text-white/30 text-[#0a1628] font-semibold text-sm sm:text-base rounded-xl transition-all"
               >
-                {loading ? 'Processing...' : isLimitReached(scanType) ? 'Limit Reached' : 'Scan Wallet'}
-              </Button>
-            </form>
-          )}
-
-          {/* Bulk Scan Form */}
-          {scanMode === 'bulk' && !bulkJob && (
-            <form onSubmit={handleBulkSubmit} className="space-y-4 sm:space-y-5">
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <label className="block text-xs sm:text-sm font-medium text-white/70">
-                    Wallet Addresses
-                  </label>
-                  <button
-                    type="button"
-                    onClick={() => fileInputRef.current?.click()}
-                    className="text-xs text-[#d4a853] hover:text-[#e8c878] transition-colors"
-                  >
-                    Upload CSV
-                  </button>
-                  <input ref={fileInputRef} type="file" accept=".csv,.txt" onChange={handleFileUpload} className="hidden" />
-                </div>
-                <textarea
-                  value={bulkAddresses}
-                  onChange={(e) => setBulkAddresses(e.target.value)}
-                  placeholder="Paste addresses, one per line...&#10;&#10;0x889D...&#10;0xd8dA..."
-                  rows={6}
-                  className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl focus:outline-none focus:border-[#d4a853]/50 text-white placeholder-white/30 font-mono text-xs sm:text-sm resize-none transition-colors"
-                />
-                <div className="flex items-center justify-between mt-2 text-xs text-white/40">
-                  <span>{validCount} valid address{validCount !== 1 ? 'es' : ''}</span>
-                  <span>Max 50</span>
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs sm:text-sm font-medium text-white/70 mb-2">Scan Mode</label>
-                <div className="flex gap-3">
-                  <button
-                    type="button"
-                    onClick={() => setScanType('quick')}
-                    className={`flex-1 py-3 px-4 rounded-xl border text-sm font-medium transition-all ${
-                      scanType === 'quick' ? 'border-[#d4a853]/50 bg-[#d4a853]/10 text-[#d4a853]' : 'border-white/10 text-white/50 hover:border-white/20'
-                    }`}
-                  >
-                    Quick
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setScanType('full')}
-                    className={`flex-1 py-3 px-4 rounded-xl border text-sm font-medium transition-all ${
-                      scanType === 'full' ? 'border-cyan-500/50 bg-cyan-500/10 text-cyan-400' : 'border-white/10 text-white/50 hover:border-white/20'
-                    }`}
-                  >
-                    Deep
-                  </button>
-                </div>
-              </div>
-
-              {error && (
-                <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-sm text-center">
-                  {error}
-                </div>
-              )}
-
-              <Button
-                type="submit"
-                disabled={validCount === 0 || loading}
-                className="w-full py-5 sm:py-6 bg-[#d4a853] hover:bg-[#e8c878] disabled:bg-white/10 disabled:text-white/30 text-[#0a1628] font-semibold text-sm sm:text-base rounded-xl transition-all"
-              >
-                {loading ? 'Starting...' : `Scan ${validCount} Wallet${validCount !== 1 ? 's' : ''}`}
+                {loading ? 'Processing...' : 
+                  scanMode === 'single' 
+                    ? (isLimitReached(scanType) ? 'Limit Reached' : 'Scan Wallet')
+                    : `Scan ${validCount} Wallet${validCount !== 1 ? 's' : ''}`
+                }
               </Button>
             </form>
           )}
 
           {/* Bulk Job Progress */}
-          {scanMode === 'bulk' && bulkJob && (
+          {bulkJob && (
             <div className="space-y-5">
               <div>
                 <div className="flex items-center justify-between mb-2">
@@ -392,7 +385,7 @@ export default function SearchPage() {
               {bulkJob.status === 'COMPLETE' && (
                 <div className="flex gap-3">
                   <Button
-                    onClick={() => { setBulkJob(null); setBulkAddresses(''); }}
+                    onClick={() => { setBulkJob(null); setBulkAddresses(''); setScanMode('bulk'); }}
                     variant="outline"
                     className="flex-1 border-white/10 text-white/70 hover:bg-white/5"
                   >
