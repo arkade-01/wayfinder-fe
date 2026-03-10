@@ -272,12 +272,12 @@ export default function ScanResultPage() {
                     </div>
                   )}
                   
-                  {/* X/Twitter Results */}
-                  {identity.xResults && identity.xResults.length > 0 && (
+                  {/* X/Twitter Results — only show if no confirmed twitter handle, or top match if score is high */}
+                  {identity.xResults && identity.xResults.length > 0 && !identity.twitter && (
                     <div className="pt-3">
-                      <p className="text-white/50 text-sm mb-3">Potential X Matches</p>
+                      <p className="text-white/50 text-sm mb-3">Potential X Match</p>
                       <div className="space-y-2">
-                        {identity.xResults.map((x, i) => (
+                        {identity.xResults.slice(0, 1).map((x, i) => (
                           <a
                             key={i}
                             href={x.tweetUrl}
@@ -290,8 +290,8 @@ export default function ScanResultPage() {
                                 <span className="font-medium">{x.name}</span>
                                 <span className="text-white/40 ml-2">@{x.username}</span>
                               </div>
-                              <Badge className="bg-cyan-500/10 text-cyan-400 border-cyan-500/20">
-                                {x.followers} followers
+                              <Badge className="bg-yellow-500/10 text-yellow-400 border-yellow-500/20">
+                                Unverified
                               </Badge>
                             </div>
                             {x.bio && <p className="text-white/40 text-sm mt-1">{x.bio}</p>}
@@ -333,11 +333,31 @@ export default function ScanResultPage() {
                 )}
                 
                 {onchain.nfts.length > 0 && (
-                  <div>
+                  <div className="mb-3">
                     <p className="text-white/50 text-sm mb-2">NFTs</p>
                     <div className="flex flex-wrap gap-2">
                       {onchain.nfts.map((nft, i) => (
                         <Badge key={i} className="bg-purple-500/10 text-purple-400 border-purple-500/20">{nft}</Badge>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {onchain.topContacts && onchain.topContacts.length > 0 && (
+                  <div>
+                    <p className="text-white/50 text-sm mb-2">Frequently Interacted Addresses</p>
+                    <div className="space-y-2">
+                      {onchain.topContacts.map((addr, i) => (
+                        <a
+                          key={i}
+                          href={`/search?q=${addr}`}
+                          className="flex items-center justify-between p-2.5 rounded-lg bg-white/5 hover:bg-white/10 transition-colors group"
+                        >
+                          <span className="font-mono text-xs text-white/60 group-hover:text-white transition-colors truncate">
+                            {addr}
+                          </span>
+                          <span className="text-white/30 text-xs ml-2 shrink-0">→</span>
+                        </a>
                       ))}
                     </div>
                   </div>
