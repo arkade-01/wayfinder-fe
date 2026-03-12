@@ -77,12 +77,30 @@ export default function ScanResultPage() {
   const [error, setError] = useState('');
 
   useEffect(() => {
+    // Load from localStorage immediately so results show instantly on return
+    const cacheKey = `wayfinder_scan_${id}`;
+    try {
+      const cached = localStorage.getItem(cacheKey);
+      if (cached) {
+        const parsed = JSON.parse(cached) as ScanData;
+        if (parsed.status === 'COMPLETE') {
+          setScan(parsed);
+          return; // skip API call entirely if we have a complete result cached
+        }
+      }
+    } catch {}
+
     const fetchScan = async () => {
       try {
         const res = await fetch(`/api/scan/${id}`);
         if (!res.ok) throw new Error('Scan not found');
         const data = await res.json();
         setScan(data);
+
+        // Cache complete results in localStorage
+        if (data.status === 'COMPLETE') {
+          try { localStorage.setItem(cacheKey, JSON.stringify(data)); } catch {}
+        }
 
         if (data.status === 'PENDING' || data.status === 'PROCESSING' || data.status === 'RUNNING') {
           setTimeout(fetchScan, 2000);
