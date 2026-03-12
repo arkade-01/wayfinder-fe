@@ -14,6 +14,7 @@ interface XResult {
   bio: string;
   score: number;
   tweetUrl: string;
+  confidence: 'confirmed' | 'high' | 'possible';
 }
 
 interface WebResult {
@@ -272,10 +273,10 @@ export default function ScanResultPage() {
                     </div>
                   )}
                   
-                  {/* X/Twitter Results — only show if no confirmed twitter handle, or top match if score is high */}
+                  {/* X/Twitter Results — show only best match with confidence level */}
                   {identity.xResults && identity.xResults.length > 0 && !identity.twitter && (
                     <div className="pt-3">
-                      <p className="text-white/50 text-sm mb-3">Potential X Match</p>
+                      <p className="text-white/50 text-sm mb-3">X / Twitter</p>
                       <div className="space-y-2">
                         {identity.xResults.slice(0, 1).map((x, i) => (
                           <a
@@ -290,8 +291,12 @@ export default function ScanResultPage() {
                                 <span className="font-medium">{x.name}</span>
                                 <span className="text-white/40 ml-2">@{x.username}</span>
                               </div>
-                              <Badge className="bg-yellow-500/10 text-yellow-400 border-yellow-500/20">
-                                Unverified
+                              <Badge className={
+                                x.confidence === 'high'
+                                  ? 'bg-green-500/10 text-green-400 border-green-500/20'
+                                  : 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20'
+                              }>
+                                {x.confidence === 'high' ? 'High confidence' : 'Possible match'}
                               </Badge>
                             </div>
                             {x.bio && <p className="text-white/40 text-sm mt-1">{x.bio}</p>}
