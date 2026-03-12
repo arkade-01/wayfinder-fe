@@ -82,6 +82,7 @@ export default function SearchPage() {
   };
 
   const isLimitReached = (type: ScanType): boolean => {
+    if (limits?.betaMode) return false;
     return getRemaining(type) <= 0;
   };
 
@@ -425,9 +426,11 @@ export default function SearchPage() {
             </div>
           )}
 
-          <p className="text-center text-white/30 text-[10px] sm:text-xs mt-4 sm:mt-6">
-            Limits reset daily at midnight UTC
-          </p>
+          {!limits?.betaMode && (
+            <p className="text-center text-white/30 text-[10px] sm:text-xs mt-4 sm:mt-6">
+              Limits reset daily at midnight UTC
+            </p>
+          )}
         </Card>
       </div>
     </main>
