@@ -11,6 +11,7 @@ type ScanType = 'quick' | 'full' | 'bridge';
 type ScanMode = 'single' | 'bulk';
 
 interface Limits {
+  betaMode?: boolean;
   quick: { used: number; limit: number; resetsAt: string };
   full: { used: number; limit: number; resetsAt: string };
   bridge: { used: number; limit: number; resetsAt: string };
@@ -224,9 +225,17 @@ export default function SearchPage() {
           {/* Rate Limits */}
           {limits && (
             <div className="flex justify-center gap-2 sm:gap-4 mb-5 sm:mb-6">
-              <LimitBadge label="Basic" remaining={getRemaining('quick')} limit={limits.quick.limit} />
-              <LimitBadge label="Deep" remaining={getRemaining('full')} limit={limits.full.limit} />
-              <LimitBadge label="Bridge" remaining={getRemaining('bridge')} limit={limits.bridge.limit} />
+              {limits.betaMode ? (
+                <span className="px-3 py-1 text-xs font-medium rounded-full bg-[#d4a853]/10 text-[#d4a853] border border-[#d4a853]/20">
+                  🚀 Beta — Unlimited Scans
+                </span>
+              ) : (
+                <>
+                  <LimitBadge label="Basic" remaining={getRemaining('quick')} limit={limits.quick.limit} />
+                  <LimitBadge label="Deep" remaining={getRemaining('full')} limit={limits.full.limit} />
+                  <LimitBadge label="Bridge" remaining={getRemaining('bridge')} limit={limits.bridge.limit} />
+                </>
+              )}
             </div>
           )}
 
@@ -443,23 +452,23 @@ function ScanTypeSelector({ scanType, setScanType, getRemaining, limits }: {
   getRemaining: (type: ScanType) => number;
   limits: Limits | null;
 }) {
-  const isLimitReached = (type: ScanType) => getRemaining(type) <= 0;
+  const isLimitReached = (type: ScanType) => !limits?.betaMode && getRemaining(type) <= 0;
 
   return (
     <div>
       <label className="block text-xs sm:text-sm font-medium text-white/70 mb-2 sm:mb-3">Scan Type</label>
       <div className="space-y-2">
-        <ScanOption selected={scanType === 'quick'} onClick={() => setScanType('quick')} title="Identity (Basic)" description="Quick identity lookup — ENS, socials, labels" color="gold" remaining={getRemaining('quick')} limit={limits?.quick.limit || 3} disabled={isLimitReached('quick')} />
-        <ScanOption selected={scanType === 'full'} onClick={() => setScanType('full')} title="Identity (Deep)" description="Full scan — identity + bridges + exit wallets" color="cyan" remaining={getRemaining('full')} limit={limits?.full.limit || 1} disabled={isLimitReached('full')} recommended />
-        <ScanOption selected={scanType === 'bridge'} onClick={() => setScanType('bridge')} title="Bridge Exit Trace" description="Track cross-chain transfers and destinations" color="green" remaining={getRemaining('bridge')} limit={limits?.bridge.limit || 1} disabled={isLimitReached('bridge')} />
+        <ScanOption selected={scanType === 'quick'} onClick={() => setScanType('quick')} title="Identity (Basic)" description="Quick identity lookup — ENS, socials, labels" color="gold" remaining={getRemaining('quick')} limit={limits?.quick.limit || 3} disabled={isLimitReached('quick')} betaMode={limits?.betaMode} />
+        <ScanOption selected={scanType === 'full'} onClick={() => setScanType('full')} title="Identity (Deep)" description="Full scan — identity + bridges + exit wallets" color="cyan" remaining={getRemaining('full')} limit={limits?.full.limit || 1} disabled={isLimitReached('full')} recommended betaMode={limits?.betaMode} />
+        <ScanOption selected={scanType === 'bridge'} onClick={() => setScanType('bridge')} title="Bridge Exit Trace" description="Track cross-chain transfers and destinations" color="green" remaining={getRemaining('bridge')} limit={limits?.bridge.limit || 1} disabled={isLimitReached('bridge')} betaMode={limits?.betaMode} />
       </div>
     </div>
   );
 }
 
-function ScanOption({ selected, onClick, title, description, color, remaining, limit, recommended, disabled }: {
+function ScanOption({ selected, onClick, title, description, color, remaining, limit, recommended, disabled, betaMode }: {
   selected: boolean; onClick: () => void; title: string; description: string;
-  color: 'gold' | 'cyan' | 'green'; remaining: number; limit: number; recommended?: boolean; disabled?: boolean;
+  color: 'gold' | 'cyan' | 'green'; remaining: number; limit: number; recommended?: boolean; disabled?: boolean; betaMode?: boolean;
 }) {
   const colors = {
     gold: { selected: 'border-[#d4a853]/50 bg-[#d4a853]/10', ring: 'border-[#d4a853] bg-[#d4a853]' },
@@ -482,7 +491,7 @@ function ScanOption({ selected, onClick, title, description, color, remaining, l
           <div className="flex items-center gap-2 flex-wrap">
             <p className="font-medium text-sm sm:text-base">{title}</p>
             {recommended && !disabled && <span className="px-1.5 py-0.5 text-[10px] font-semibold uppercase bg-cyan-500/20 text-cyan-400 rounded">Recommended</span>}
-            <span className={`px-1.5 py-0.5 text-[10px] font-medium rounded ${remaining === 0 ? 'bg-red-500/20 text-red-400' : 'bg-white/10 text-white/50'}`}>{remaining}/{limit}</span>
+            {!betaMode && <span className={`px-1.5 py-0.5 text-[10px] font-medium rounded ${remaining === 0 ? 'bg-red-500/20 text-red-400' : 'bg-white/10 text-white/50'}`}>{remaining}/{limit}</span>}
           </div>
           <p className="text-xs sm:text-sm text-white/40 mt-0.5">{description}</p>
         </div>
