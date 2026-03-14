@@ -48,13 +48,15 @@ export default function SearchPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const pollRef = useRef<NodeJS.Timeout | null>(null);
 
-  const isValidAddress = /^0x[0-9a-fA-F]{40}$/.test(address);
+  const isValidAddress =
+    /^0x[0-9a-fA-F]{40}$/.test(address) ||
+    /^[a-zA-Z0-9][a-zA-Z0-9-]*\.eth$/.test(address.trim());
 
   const parseAddresses = (text: string): string[] => {
     return text
       .split(/[\n,]+/)
       .map(a => a.trim())
-      .filter(a => /^0x[0-9a-fA-F]{40}$/i.test(a));
+      .filter(a => /^0x[0-9a-fA-F]{40}$/i.test(a) || /^[a-zA-Z0-9][a-zA-Z0-9-]*\.eth$/i.test(a));
   };
 
   const addressList = parseAddresses(bulkAddresses);
@@ -220,7 +222,7 @@ export default function SearchPage() {
               <CompassIcon className="w-6 h-6 sm:w-7 sm:h-7 text-[#d4a853]" />
             </div>
             <h1 className="text-xl sm:text-2xl font-bold mb-1.5 sm:mb-2">Scan Wallet</h1>
-            <p className="text-white/50 text-sm sm:text-base">Enter an address to begin investigation</p>
+            <p className="text-white/50 text-sm sm:text-base">Enter an address or ENS name to begin investigation</p>
           </div>
 
           {/* Rate Limits */}
@@ -287,11 +289,11 @@ export default function SearchPage() {
                       type="text"
                       value={address}
                       onChange={(e) => setAddress(e.target.value)}
-                      placeholder="0x..."
+                      placeholder="0x... or vitalik.eth"
                       className="w-full px-3 sm:px-4 py-3 sm:py-3.5 bg-white/5 border border-white/10 rounded-xl focus:outline-none focus:border-[#d4a853]/50 focus:ring-1 focus:ring-[#d4a853]/50 text-white placeholder-white/30 font-mono text-xs sm:text-sm transition-colors"
                     />
                     {address && !isValidAddress && (
-                      <p className="text-red-400 text-sm mt-2">⚠️ Invalid address format</p>
+                      <p className="text-red-400 text-sm mt-2">⚠️ Enter a valid address (0x…) or ENS name (.eth)</p>
                     )}
                   </>
                 )}
@@ -302,7 +304,7 @@ export default function SearchPage() {
                     <textarea
                       value={bulkAddresses}
                       onChange={(e) => setBulkAddresses(e.target.value)}
-                      placeholder="Paste addresses, one per line...&#10;0x889D...&#10;0xd8dA..."
+                      placeholder="Paste addresses or ENS names, one per line...&#10;0x889D...&#10;vitalik.eth"
                       rows={5}
                       className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl focus:outline-none focus:border-[#d4a853]/50 text-white placeholder-white/30 font-mono text-xs sm:text-sm resize-none transition-colors"
                     />
