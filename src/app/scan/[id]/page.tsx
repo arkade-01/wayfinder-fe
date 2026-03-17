@@ -192,7 +192,7 @@ export default function ScanResultPage() {
             {scan.status === 'COMPLETE' && (
               <Button onClick={downloadPdf} className="w-full sm:w-auto bg-[#d4a853] hover:bg-[#e8c878] text-[#0a1628] font-semibold text-sm">
                 <DownloadIcon className="w-4 h-4 mr-2" />
-                Download PDF
+                Open Report
               </Button>
             )}
           </div>
@@ -374,6 +374,8 @@ export default function ScanResultPage() {
                         <a
                           key={i}
                           href={`/search?q=${addr}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
                           className="flex items-center justify-between p-2.5 rounded-lg bg-white/5 hover:bg-white/10 transition-colors group"
                         >
                           <span className="font-mono text-xs text-white/60 group-hover:text-white transition-colors truncate">
