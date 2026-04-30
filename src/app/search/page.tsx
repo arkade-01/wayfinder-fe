@@ -61,7 +61,13 @@ export default function SearchPage() {
   const fetchLimits = () => {
     fetch('/api/limits', { cache: 'no-store' })
       .then(res => res.json())
-      .then(data => setLimits(data.limits))
+      .then(data => {
+        if (data.limits) {
+          setLimits({ ...data.limits, betaMode: true });
+        } else {
+          setLimits(data.limits);
+        }
+      })
       .catch(() => {});
   };
 

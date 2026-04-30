@@ -52,7 +52,7 @@ export default function BridgeResultPage() {
       try {
         // Call API directly to avoid Vercel's 10s timeout
         const apiUrl =
-          process.env.NEXT_PUBLIC_API_URL || "http://16.171.39.223:3000";
+          process.env.NEXT_PUBLIC_API_URL || "http://16.171.39.223:3002";
         const res = await fetch(`${apiUrl}/bridge/${address}`);
         if (!res.ok) throw new Error('Failed to fetch bridge data');
         const result = await res.json();
