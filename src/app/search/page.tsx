@@ -3,6 +3,8 @@
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { Badge } from '@/components/ui/badge';
+import { isSolanaAddress } from '@/lib/solana';
+import { SolanaScanView } from '@/components/SolanaScanView';
 
 type ScanType = 'quick' | 'full' | 'bridge';
 type ScanMode = 'single' | 'bulk';
@@ -41,12 +43,16 @@ export default function SearchPage() {
   const [error, setError] = useState('');
   const [limits, setLimits] = useState<Limits | null>(null);
   const [bulkJob, setBulkJob] = useState<BulkJobStatus | null>(null);
+  const [solScanId, setSolScanId] = useState<string | null>(null);
+  const solResultsRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const pollRef = useRef<NodeJS.Timeout | null>(null);
 
+  const isSolana = isSolanaAddress(address);
   const isValidAddress =
     /^0x[0-9a-fA-F]{40}$/.test(address) ||
-    /^[a-zA-Z0-9][a-zA-Z0-9-]*\.eth$/.test(address.trim());
+    /^[a-zA-Z0-9][a-zA-Z0-9-]*\.eth$/.test(address.trim()) ||
+    isSolana;
 
   const parseAddresses = (text: string): string[] => {
     return text
@@ -72,6 +78,9 @@ export default function SearchPage() {
   };
 
   useEffect(() => {
+    // Prefill from ?address= (links from the OG finder / linked-wallet results)
+    const prefill = new URLSearchParams(window.location.search).get('address');
+    if (prefill) setAddress(prefill);
     fetchLimits();
     return () => {
       if (pollRef.current) clearTimeout(pollRef.current);
@@ -116,6 +125,7 @@ export default function SearchPage() {
   const handleSingleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!isValidAddress) return;
+    if (isSolana) return handleSolanaSubmit();
     if (isLimitReached(scanType)) {
       setError(`Daily limit reached for this scan type. Resets at midnight UTC.`);
       return;
@@ -141,6 +151,22 @@ export default function SearchPage() {
       window.open(`/scan/${data.scanId}`, '_blank');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Something went wrong');
+      setLoading(false);
+    }
+  };
+
+  const handleSolanaSubmit = async () => {
+    setLoading(true);
+    setError('');
+    try {
+      const res = await fetch(`/api/solana/wallets/${address.trim()}/scan`, { method: 'POST' });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || data.error || 'Failed to queue scan');
+      setSolScanId(data.scanId);
+      setTimeout(() => solResultsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Something went wrong');
+    } finally {
       setLoading(false);
     }
   };
@@ -216,6 +242,9 @@ export default function SearchPage() {
           <CompassIcon className="w-6 h-6" style={{ color: 'var(--gold)' }} />
           <span style={{ fontFamily: 'var(--font-syne)', fontWeight: 700, fontSize: '1.05rem', letterSpacing: '-0.01em' }}>Wayfinder</span>
         </Link>
+        <Link href="/og" className="text-xs text-white/50 hover:text-white transition-colors" style={{ fontFamily: 'var(--font-jetbrains)' }}>
+          OG Finder
+        </Link>
       </nav>
 
       <div className="relative z-10 flex items-center justify-center px-4 pt-4 sm:pt-8 pb-12 sm:pb-20">
@@ -230,7 +259,7 @@ export default function SearchPage() {
               style={{ fontFamily: 'var(--font-syne)', fontWeight: 700 }}>Scan Wallet</h1>
             <p className="text-sm sm:text-base"
               style={{ color: 'rgba(255,255,255,0.4)', fontFamily: 'var(--font-jetbrains)', fontWeight: 300 }}>
-              Enter an address or ENS name to begin investigation
+              Enter an EVM address, ENS name or Solana wallet
             </p>
           </div>
 
@@ -308,12 +337,12 @@ export default function SearchPage() {
                       type="text"
                       value={address}
                       onChange={(e) => setAddress(e.target.value)}
-                      placeholder="0x... or vitalik.eth"
+                      placeholder="0x…, vitalik.eth or a Solana address"
                       className="scan-input w-full px-3 sm:px-4 py-3 sm:py-3.5 text-xs sm:text-sm"
                     />
                     {address && !isValidAddress && (
                       <p className="text-red-400 text-sm mt-2" style={{ fontFamily: 'var(--font-jetbrains)' }}>
-                        ⚠️ Enter a valid address (0x…) or ENS name (.eth)
+                        ⚠️ Enter a valid EVM address (0x…), ENS name (.eth) or Solana address
                       </p>
                     )}
                     {/* Example wallets */}
@@ -360,7 +389,24 @@ export default function SearchPage() {
               </div>
 
               {/* Scan Type */}
-              {scanMode === 'single' ? (
+              {scanMode === 'single' && isSolana ? (
+                <div>
+                  <p className="section-label mb-2 sm:mb-3">Scan Type</p>
+                  <div className="w-full p-3 sm:p-4 rounded-xl border"
+                    style={{ borderColor: 'rgba(153,69,255,0.45)', background: 'rgba(153,69,255,0.08)' }}>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <p className="font-medium text-sm sm:text-base" style={{ fontFamily: 'var(--font-syne)' }}>Linked Wallets</p>
+                      <span className="px-1.5 py-0.5 text-[10px] font-semibold uppercase rounded"
+                        style={{ background: 'rgba(153,69,255,0.2)', color: '#b98aff', fontFamily: 'var(--font-jetbrains)' }}>
+                        Solana
+                      </span>
+                    </div>
+                    <p className="text-xs sm:text-sm mt-0.5" style={{ color: 'rgba(255,255,255,0.4)', fontFamily: 'var(--font-jetbrains)', fontWeight: 300 }}>
+                      Find likely alt wallets — shared funders, fee payers, sweeps and funded children
+                    </p>
+                  </div>
+                </div>
+              ) : scanMode === 'single' ? (
                 <ScanTypeSelector scanType={scanType} setScanType={setScanType} getRemaining={getRemaining} limits={limits} />
               ) : (
                 <div>
@@ -405,12 +451,12 @@ export default function SearchPage() {
 
               <button
                 type="submit"
-                disabled={scanMode === 'single' ? (!isValidAddress || loading || isLimitReached(scanType)) : (validCount === 0 || loading)}
+                disabled={scanMode === 'single' ? (!isValidAddress || loading || (!isSolana && isLimitReached(scanType))) : (validCount === 0 || loading)}
                 className="btn-gold w-full py-3.5 sm:py-4 rounded-xl text-sm sm:text-base"
               >
                 {loading ? 'Processing...' :
                   scanMode === 'single'
-                    ? (isLimitReached(scanType) ? 'Limit Reached' : 'Scan Wallet')
+                    ? (isSolana ? 'Find Linked Wallets' : isLimitReached(scanType) ? 'Limit Reached' : 'Scan Wallet')
                     : `Scan ${validCount} Wallet${validCount !== 1 ? 's' : ''}`
                 }
               </button>
@@ -500,6 +546,12 @@ export default function SearchPage() {
           )}
         </div>
       </div>
+
+      {solScanId && (
+        <div ref={solResultsRef} className="relative z-10 px-4 pb-16 max-w-3xl mx-auto scroll-mt-6">
+          <SolanaScanView scanId={solScanId} showPermalink onNewScan={setSolScanId} />
+        </div>
+      )}
     </main>
   );
 }
